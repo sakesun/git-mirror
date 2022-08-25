@@ -14,7 +14,7 @@ function checkSourcesFile {
         [Console]::Error.WriteLine("Need $SOURCES_FILE")
         [Console]::Error.WriteLine("`nGenerate sample content:`n")
         [Console]::Error.WriteLine("$sampleContent")
-        "$sampleContent" | Out-File $SOURCES_FILE
+        $sampleContent | Out-File $SOURCES_FILE
         Exit
     }
 }
