@@ -24,31 +24,44 @@ function loadSources {
     return (Get-Content -Path $SOURCES_FILE | ConvertFrom-Json -AsHashtable)
 }
 
-function processSource($name, $repo) {
+function processSource($name, $repo, $reset) {
     $target = (Join-Path $PSScriptRoot $name)
     $targetExists = Test-Path $target -PathType Container
     if (! $targetExists) {
         git clone "$repo" "$target"
     } else {
         Push-Location $target
-        git reset --hard
-        git clean --force -d -x
-        git checkout HEAD
+        if ($reset) {
+            Write-Output "  Resetting..."
+            git reset --hard
+            Write-Output "  Cleaning..."
+            git clean --force -d -x
+            Write-Output "  Checking out HEAD..."
+            git checkout HEAD
+        }
+        Write-Output "  Pulling..."
+        git pull
         Pop-Location
     }
 }
 
 function Main {
+    param (
+        [switch] $reset
+    )
     $sources = loadSources
     foreach ($s in $sources.GetEnumerator()) {
         if ($s.Key.StartsWith("_")) { continue; }
+        Write-Output "Updating $($s.Key)..."
         processSource `
           -name $s.Key `
-          -repo $s.Value.repo
+          -repo $s.Value.repo `
+          -reset $reset.IsPresent
+        Write-Output ""
     }
 
 }
 
 #-----
-Main
+Main @args
 #-----
