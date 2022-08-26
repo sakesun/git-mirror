@@ -15,12 +15,11 @@ function checkSourcesFile {
         [Console]::Error.WriteLine("`nGenerate sample content:`n")
         [Console]::Error.WriteLine("$sampleContent")
         $sampleContent | Out-File $SOURCES_FILE
-        Exit
     }
+    return $sourcesExists
 }
 
 function loadSources {
-    checkSourcesFile
     return (Get-Content -Path $SOURCES_FILE | ConvertFrom-Json -AsHashtable)
 }
 
@@ -47,11 +46,16 @@ function processSource($name, $repo, $reset) {
 
 function Main {
     param (
+        [string] $filter,
         [switch] $reset
     )
+    if (! (checkSourcesFile)) { return }
     $sources = loadSources
     foreach ($s in $sources.GetEnumerator()) {
         if ($s.Key.StartsWith("_")) { continue; }
+        if (! [string]::IsNullOrEmpty($filter)) {
+            if ($s.Key -notmatch "`^$filter`$") { continue; }
+        }
         Write-Output "Updating $($s.Key)..."
         processSource `
           -name $s.Key `
@@ -59,7 +63,6 @@ function Main {
           -reset $reset.IsPresent
         Write-Output ""
     }
-
 }
 
 #-----
