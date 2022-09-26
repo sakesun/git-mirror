@@ -42,6 +42,10 @@ function processSource($name, $repo, $reset) {
         git pull
         Pop-Location
     }
+
+    # Tracking all remote branches
+    #   https://stackoverflow.com/a/36203767/77996
+    git branch -r  | %{$_ -replace "  origin/"} | %{git branch --track $_ "origin/$_"}
 }
 
 function Main {
