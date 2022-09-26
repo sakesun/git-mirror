@@ -23,11 +23,20 @@ function loadSources {
     return (Get-Content -Path $SOURCES_FILE | ConvertFrom-Json -AsHashtable)
 }
 
+function trackAllBranches($target) {
+    Push-Location $target
+    # Tracking all remote branches
+    #   https://stackoverflow.com/a/36203767/77996
+    git branch -r  | %{$_ -replace "  origin/"} | %{git branch --track $_ "origin/$_"}
+    Pop-Location
+}
+
 function processSource($name, $repo, $reset) {
     $target = (Join-Path $PSScriptRoot $name)
     $targetExists = Test-Path $target -PathType Container
     if (! $targetExists) {
         git clone "$repo" "$target"
+        trackAllBranches $target
     } else {
         Push-Location $target
         if ($reset) {
@@ -40,12 +49,9 @@ function processSource($name, $repo, $reset) {
         }
         Write-Output "  Pulling..."
         git pull
+        trackAllBranches $target
         Pop-Location
     }
-
-    # Tracking all remote branches
-    #   https://stackoverflow.com/a/36203767/77996
-    git branch -r  | %{$_ -replace "  origin/"} | %{git branch --track $_ "origin/$_"}
 }
 
 function Main {
