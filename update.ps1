@@ -27,7 +27,13 @@ function trackAllBranches($target) {
     Push-Location $target
     # Tracking all remote branches
     #   https://stackoverflow.com/a/36203767/77996
-    git branch -r  | %{$_ -replace "  origin/"} | %{git branch --track $_ "origin/$_"}
+    $localBranchesList = (git branch --list| % { $_.TrimStart("*").Trim() } )
+    $localBranches = [System.Collections.Generic.HashSet[String]]@($localBranchesList)
+    (git branch -r
+     | ? { -not $_.Contains(' -> ') }
+     | % { $_ -replace "  origin/" }
+     | ? { $_ -NotIn $localBranches }
+     | % { git branch --track $_ "origin/$_" })
     Pop-Location
 }
 
