@@ -23,17 +23,34 @@ function loadSources {
     return (Get-Content -Path $SOURCES_FILE | ConvertFrom-Json -AsHashtable)
 }
 
+function localBranches($target) {
+    ( git branch --list `
+      | % { $_.TrimStart("*").Trim() } )
+}
+
+function remoteBranches($target) {
+    ( git branch -r
+      | ? { -not $_.Contains(' -> ') }
+      | % { $_ -replace "  origin/" } )
+}
+
 function trackAllBranches($target) {
-    Push-Location $target
     # Tracking all remote branches
     #   https://stackoverflow.com/a/36203767/77996
-    $localBranchesList = (git branch --list| % { $_.TrimStart("*").Trim() } )
-    $localBranches = [System.Collections.Generic.HashSet[String]]@($localBranchesList)
-    (git branch -r
-     | ? { -not $_.Contains(' -> ') }
-     | % { $_ -replace "  origin/" }
-     | ? { $_ -NotIn $localBranches }
-     | % { git branch --track $_ "origin/$_" })
+    Push-Location $target
+    $currentBranch = (git branch --show-current)
+    $localBranchesSet = [System.Collections.Generic.HashSet[String]]@(localBranches $target)
+    foreach ($b in (remoteBranches $target)) {
+        if ($b -NotIn $localBranchesSet) {
+            git branch --track "$b" "origin/$b"
+        } else {
+            # https://stackoverflow.com/a/6338515/77996
+            git update-ref "refs/heads/$b" "origin/$b"
+        }
+        if ($b -eq $currentBranch) {
+            git reset --hard
+        }
+    }
     Pop-Location
 }
 
@@ -53,8 +70,9 @@ function processSource($name, $repo, $reset) {
             Write-Output "  Checking out HEAD..."
             git checkout HEAD
         }
-        Write-Output "  Pulling..."
+        Write-Output "  Fetching..."
         git fetch
+        Write-Output "  Tracking..."
         trackAllBranches $target
         Pop-Location
     }
