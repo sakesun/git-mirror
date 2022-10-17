@@ -54,7 +54,7 @@ function processSource($name, $repo, $reset) {
             git checkout HEAD
         }
         Write-Output "  Pulling..."
-        git pull
+        git fetch
         trackAllBranches $target
         Pop-Location
     }
