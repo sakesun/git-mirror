@@ -44,11 +44,12 @@ function trackAllBranches($target) {
         if ($b -NotIn $localBranchesSet) {
             git branch --track "$b" "origin/$b"
         } else {
-            # https://stackoverflow.com/a/6338515/77996
-            git update-ref "refs/heads/$b" "origin/$b"
-        }
-        if ($b -eq $currentBranch) {
-            git reset --hard
+            if ($b -eq $currentBranch) {
+                git merge --ff-only "origin/$b"
+            } else {
+                # https://stackoverflow.com/a/6338515/77996
+                git branch -f "$b" "origin/$b"
+            }
         }
     }
     Pop-Location
